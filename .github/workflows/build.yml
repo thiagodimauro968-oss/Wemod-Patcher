@@ -1,0 +1,34 @@
+name: Build Executable
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build Native DLL with MinGW
+        run: |
+          cd ./tools/asar-fuses-bypass
+          mkdir build
+          cd build
+          cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+          mingw32-make
+
+      - name: Publish EXE
+        run: dotnet publish Wemod-Patcher.sln -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WemodPatcher-Executable
+          path: '**/bin/Release/net*/**/*.exe'
